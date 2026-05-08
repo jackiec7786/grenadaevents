@@ -8,7 +8,7 @@ const QUERIES = [
   '"Grenada W.I." events 2026',
   '"Grenada West Indies" events 2026',
   "Spicemas 2026 schedule",
-  '"St. George\'s Grenada" events 2026',
+  '"Saint Georges Grenada" events 2026',
 ];
 
 // Domains covered by dedicated scrapers — skip to avoid duplicates
@@ -21,6 +21,9 @@ const SKIP_DOMAINS = [
   "caribbeanevents.com",
   "ilovecarnival.com",
   "nowgrenada.com",
+  "eventbrite.com",
+  "bandsintown.com",
+  "viator.com",
 ];
 
 function isSkippedDomain(url: string): boolean {
