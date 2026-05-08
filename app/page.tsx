@@ -52,9 +52,9 @@ export default async function Home() {
         <span className="badge">Storage: {stored ? "blob" : "none"}</span>
       </div>
 
-      {stored?.errors?.length > 0 && (
+      {(stored?.errors?.length ?? 0) > 0 && (
         <div className="empty">
-          Some sources failed: {stored.errors.join("; ")}
+          Some sources failed: {stored!.errors.join("; ")}
         </div>
       )}
 
