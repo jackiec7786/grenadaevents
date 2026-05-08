@@ -11,7 +11,8 @@ export async function saveEvents(result: ScrapeResult): Promise<void> {
   await put(BLOB_PATH, JSON.stringify(result, null, 2), {
     access: "public",
     contentType: "application/json",
-    allowOverwrite: true
+    allowOverwrite: true,
+    addRandomSuffix: false,
   });
 }
 
