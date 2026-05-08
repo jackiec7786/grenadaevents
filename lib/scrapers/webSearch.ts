@@ -1,11 +1,9 @@
-import * as cheerio from "cheerio";
 import { EventItem } from "../types";
 import { cleanText, makeEventId } from "../utils";
 import { extractDateText, extractTimeText } from "../date-parser";
 
-const SEARCH_BASE = "https://html.duckduckgo.com/html/";
+const BRAVE_API = "https://api.search.brave.com/res/v1/web/search";
 
-// Queries tuned to Grenada, W.I. (West Indies) — not Grenada, Mississippi
 const QUERIES = [
   '"Grenada W.I." events 2026',
   '"Grenada West Indies" events 2026',
@@ -13,7 +11,7 @@ const QUERIES = [
   '"St. George\'s Grenada" events 2026',
 ];
 
-// Domains already covered by dedicated scrapers — skip duplicates
+// Domains covered by dedicated scrapers — skip to avoid duplicates
 const SKIP_DOMAINS = [
   "puregrenada.com",
   "partygrenada.com",
@@ -34,85 +32,77 @@ function isSkippedDomain(url: string): boolean {
   }
 }
 
-async function searchQuery(query: string, scrapedAt: string): Promise<EventItem[]> {
-  const body = new URLSearchParams({ q: query, kl: "us-en" });
+type BraveResult = {
+  title?: string;
+  url?: string;
+  description?: string;
+  page_age?: string;
+};
 
-  const res = await fetch(SEARCH_BASE, {
-    method: "POST",
+type BraveResponse = {
+  web?: { results?: BraveResult[] };
+};
+
+async function searchQuery(query: string, apiKey: string, scrapedAt: string): Promise<EventItem[]> {
+  const url = `${BRAVE_API}?${new URLSearchParams({ q: query, count: "20" })}`;
+
+  const res = await fetch(url, {
     headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-      "Content-Type": "application/x-www-form-urlencoded",
-      Accept:
-        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.9",
+      "X-Subscription-Token": apiKey,
+      Accept: "application/json",
     },
-    body: body.toString(),
     cache: "no-store",
   });
 
-  if (!res.ok) throw new Error(`DuckDuckGo search returned ${res.status}`);
+  if (!res.ok) throw new Error(`Brave Search returned ${res.status}`);
 
-  const html = await res.text();
-  const $ = cheerio.load(html);
+  const data = (await res.json()) as BraveResponse;
+  const results = data.web?.results ?? [];
   const events: EventItem[] = [];
 
-  $(".result, .web-result").each((_, el) => {
-    const block = $(el);
+  for (const result of results) {
+    const title = cleanText(result.title);
+    if (!title || title.length < 4) continue;
 
-    const titleEl = block.find("a.result__a, h2.result__title a").first();
-    const title = cleanText(titleEl.text());
-    if (!title || title.length < 4) return;
+    const eventUrl = result.url;
+    if (!eventUrl || isSkippedDomain(eventUrl)) continue;
 
-    // DuckDuckGo wraps the real URL in a redirect — extract from href or data attributes
-    const rawHref =
-      titleEl.attr("href") ||
-      block.find("a.result__a").attr("href") ||
-      "";
-    let url = rawHref;
-    try {
-      // DDG sometimes encodes the real URL as uddg= param
-      const parsed = new URL(rawHref, SEARCH_BASE);
-      url = parsed.searchParams.get("uddg") || rawHref;
-    } catch {
-      // keep rawHref
-    }
+    const description = cleanText(result.description);
+    const combined = `${title} ${description}`.toLowerCase();
 
-    if (!url || url.startsWith("/") || isSkippedDomain(url)) return;
-
-    const snippet = cleanText(block.find(".result__snippet").first().text());
-    const combined = `${title} ${snippet}`;
-
-    // Must mention Grenada and must NOT be clearly about Grenada, Mississippi
-    const lower = combined.toLowerCase();
-    if (!lower.includes("grenada")) return;
-    if (lower.includes("mississippi") || lower.includes(", ms ") || lower.includes(",ms")) return;
+    if (!combined.includes("grenada")) continue;
+    if (combined.includes("mississippi") || combined.includes(", ms ")) continue;
 
     const event: EventItem = {
       id: "",
       title,
-      startDate: extractDateText(combined),
+      startDate: result.page_age
+        ? result.page_age.slice(0, 10)
+        : extractDateText(combined),
       time: extractTimeText(combined),
       venue: null,
       location: "Grenada",
       category: "Web Search",
-      description: snippet || null,
+      description: description || null,
       source: "Web Search",
-      url,
+      url: eventUrl,
       scrapedAt,
     };
     event.id = makeEventId(event);
     events.push(event);
-  });
+  }
 
   return events;
 }
 
 export async function scrapeWebSearch(): Promise<EventItem[]> {
+  const apiKey = process.env.BRAVE_API_KEY;
+  if (!apiKey) throw new Error("BRAVE_API_KEY is not set");
+
   const scrapedAt = new Date().toISOString();
 
   const results = await Promise.allSettled(
-    QUERIES.map((q) => searchQuery(q, scrapedAt))
+    QUERIES.map((q) => searchQuery(q, apiKey, scrapedAt))
   );
 
   return results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
