@@ -6,6 +6,7 @@ import { scrapeNowGrenada } from "./scrapers/nowGrenada";
 import { scrapePartyGrenada } from "./scrapers/partyGrenada";
 import { scrapePureGrenada } from "./scrapers/pureGrenada";
 import { scrapeSpicemas } from "./scrapers/spicemas";
+import { scrapeWebSearch } from "./scrapers/webSearch";
 import { ScrapeResult } from "./types";
 import { dedupeEvents, isUpcoming } from "./utils";
 
@@ -21,6 +22,7 @@ export async function scrapeAllEvents(): Promise<ScrapeResult> {
     scrapeFeteList,
     scrapeCaribbeanEvents,
     scrapeIloveCarnival,
+    scrapeWebSearch,
   ];
 
   const results = await Promise.allSettled(scrapers.map((scraper) => scraper()));
