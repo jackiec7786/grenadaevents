@@ -8,7 +8,7 @@ import { scrapePartyGrenada } from "./scrapers/partyGrenada";
 import { scrapePureGrenada } from "./scrapers/pureGrenada";
 import { scrapeSpicemas } from "./scrapers/spicemas";
 import { ScrapeResult } from "./types";
-import { dedupeEvents } from "./utils";
+import { dedupeEvents, isUpcoming } from "./utils";
 
 export async function scrapeAllEvents(): Promise<ScrapeResult> {
   const scrapedAt = new Date().toISOString();
@@ -27,7 +27,9 @@ export async function scrapeAllEvents(): Promise<ScrapeResult> {
 
   const results = await Promise.allSettled(scrapers.map((scraper) => scraper()));
   const events = dedupeEvents(
-    results.flatMap((result) => (result.status === "fulfilled" ? result.value : []))
+    results
+      .flatMap((result) => (result.status === "fulfilled" ? result.value : []))
+      .filter(isUpcoming)
   );
 
   const errors = results
