@@ -21,6 +21,13 @@ export function makeEventId(event: Pick<EventItem, "title" | "source" | "url">):
     .digest("hex");
 }
 
+export function isUpcoming(event: EventItem): boolean {
+  if (!event.startDate) return true;
+  const yearMatch = event.startDate.match(/\b(20\d{2})\b/);
+  if (yearMatch) return parseInt(yearMatch[1]) >= 2026;
+  return true; // no explicit year — assume upcoming
+}
+
 function eventScore(e: EventItem): number {
   return (e.startDate ? 2 : 0) + (e.time ? 1 : 0) + (e.venue ? 1 : 0);
 }
