@@ -1,33 +1,5 @@
 import { loadEvents } from "@/lib/events-store";
-import { EventItem } from "@/lib/types";
-
-function trimDescription(value?: string | null): string | null {
-  if (!value) return null;
-  return value.length > 220 ? `${value.slice(0, 220)}…` : value;
-}
-
-function EventCard({ event }: { event: EventItem }) {
-  const description = trimDescription(event.description);
-
-  return (
-    <article className="card">
-      <h2>{event.title}</h2>
-      <div className="meta">
-        {event.startDate && <div>Date: {event.startDate}</div>}
-        {event.time && <div>Time: {event.time}</div>}
-        {event.venue && <div>Venue: {event.venue}</div>}
-        {event.category && <div>Category: {event.category}</div>}
-      </div>
-      {description && <p className="description">{description}</p>}
-      <div className="cardFooter">
-        <span className="source">{event.source}</span>
-        <a className="button" href={event.url} target="_blank" rel="noreferrer">
-          View event
-        </a>
-      </div>
-    </article>
-  );
-}
+import { EventsGrid } from "./components/EventsGrid";
 
 export default async function Home() {
   const stored = await loadEvents().catch(() => null);
@@ -63,11 +35,7 @@ export default async function Home() {
           No events found yet. Visit <code>/api/scrape</code> to populate the event list.
         </div>
       ) : (
-        <section className="grid">
-          {events.map((event) => (
-            <EventCard key={event.id} event={event} />
-          ))}
-        </section>
+        <EventsGrid events={events} />
       )}
     </main>
   );

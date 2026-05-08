@@ -1,11 +1,7 @@
 import { scrapeCaribbeanEvents } from "./scrapers/caribbeanEvents";
 import { scrapeFeteList } from "./scrapers/feteList";
-import { scrapeGo2Fete } from "./scrapers/go2fete";
 import { scrapeIloveCarnival } from "./scrapers/iloveCarnival";
-import { scrapeNowGrenada } from "./scrapers/nowGrenada";
-import { scrapePartyGrenada } from "./scrapers/partyGrenada";
 import { scrapePureGrenada } from "./scrapers/pureGrenada";
-import { scrapeSpicemas } from "./scrapers/spicemas";
 import { scrapeWebSearch } from "./scrapers/webSearch";
 import { ScrapeResult } from "./types";
 import { dedupeEvents, isUpcoming } from "./utils";
@@ -15,10 +11,6 @@ export async function scrapeAllEvents(): Promise<ScrapeResult> {
 
   const scrapers = [
     scrapePureGrenada,
-    scrapePartyGrenada,
-    scrapeGo2Fete,
-    scrapeNowGrenada,
-    scrapeSpicemas,
     scrapeFeteList,
     scrapeCaribbeanEvents,
     scrapeIloveCarnival,
