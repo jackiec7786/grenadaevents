@@ -1,5 +1,4 @@
 import { scrapeCaribbeanEvents } from "./scrapers/caribbeanEvents";
-import { scrapeEventbrite } from "./scrapers/eventbrite";
 import { scrapeFeteList } from "./scrapers/feteList";
 import { scrapeGo2Fete } from "./scrapers/go2fete";
 import { scrapeIloveCarnival } from "./scrapers/iloveCarnival";
@@ -18,7 +17,6 @@ export async function scrapeAllEvents(): Promise<ScrapeResult> {
     scrapePartyGrenada,
     scrapeGo2Fete,
     scrapeNowGrenada,
-    scrapeEventbrite,
     scrapeSpicemas,
     scrapeFeteList,
     scrapeCaribbeanEvents,
