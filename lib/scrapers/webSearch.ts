@@ -1,17 +1,18 @@
+import * as cheerio from "cheerio";
 import { EventItem } from "../types";
 import { cleanText, makeEventId } from "../utils";
 import { extractDateText, extractTimeText } from "../date-parser";
 
-const BRAVE_API = "https://api.search.brave.com/res/v1/web/search";
+// Google News RSS — free, no API key, works from cloud IPs
+const GOOGLE_NEWS_RSS = "https://news.google.com/rss/search";
 
 const QUERIES = [
   '"Grenada W.I." events 2026',
-  '"Grenada West Indies" events 2026',
-  "Spicemas 2026 schedule",
-  '"Saint Georges Grenada" events 2026',
+  '"Grenada West Indies" events',
+  "Spicemas 2026",
+  '"Saint Georges" Grenada event',
 ];
 
-// Domains covered by dedicated scrapers — skip to avoid duplicates
 const SKIP_DOMAINS = [
   "puregrenada.com",
   "partygrenada.com",
@@ -35,78 +36,73 @@ function isSkippedDomain(url: string): boolean {
   }
 }
 
-type BraveResult = {
-  title?: string;
-  url?: string;
-  description?: string;
-  page_age?: string;
-};
-
-type BraveResponse = {
-  web?: { results?: BraveResult[] };
-};
-
-async function searchQuery(query: string, apiKey: string, scrapedAt: string): Promise<EventItem[]> {
-  const url = `${BRAVE_API}?${new URLSearchParams({ q: query, count: "20" })}`;
+async function fetchFeed(query: string, scrapedAt: string): Promise<EventItem[]> {
+  const url = `${GOOGLE_NEWS_RSS}?${new URLSearchParams({
+    q: query,
+    hl: "en-US",
+    gl: "US",
+    ceid: "US:en",
+  })}`;
 
   const res = await fetch(url, {
     headers: {
-      "X-Subscription-Token": apiKey,
-      Accept: "application/json",
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      Accept: "application/rss+xml, application/xml, text/xml, */*",
     },
     cache: "no-store",
   });
 
-  if (!res.ok) throw new Error(`Brave Search returned ${res.status}`);
+  if (!res.ok) throw new Error(`Google News RSS returned ${res.status}`);
 
-  const data = (await res.json()) as BraveResponse;
-  const results = data.web?.results ?? [];
+  const xml = await res.text();
+  const $ = cheerio.load(xml, { xmlMode: true });
   const events: EventItem[] = [];
 
-  for (const result of results) {
-    const title = cleanText(result.title);
-    if (!title || title.length < 4) continue;
+  $("item").each((_, el) => {
+    const item = $(el);
+    const title = cleanText(item.find("title").first().text());
+    if (!title || title.length < 4) return;
 
-    const eventUrl = result.url;
-    if (!eventUrl || isSkippedDomain(eventUrl)) continue;
+    // Google News wraps links in a redirect — the <link> text node holds the real URL
+    const rawLink =
+      item.find("link").text() ||
+      item.find("guid").text();
+    if (!rawLink || isSkippedDomain(rawLink)) return;
 
-    const description = cleanText(result.description);
+    const pubDate = cleanText(item.find("pubDate").text());
+    const description = cleanText(
+      cheerio.load(item.find("description").text()).text()
+    );
     const combined = `${title} ${description}`.toLowerCase();
 
-    if (!combined.includes("grenada")) continue;
-    if (combined.includes("mississippi") || combined.includes(", ms ")) continue;
+    if (!combined.includes("grenada")) return;
+    if (combined.includes("mississippi") || combined.includes(", ms ")) return;
 
     const event: EventItem = {
       id: "",
       title,
-      startDate: result.page_age
-        ? result.page_age.slice(0, 10)
-        : extractDateText(combined),
+      startDate: pubDate ? new Date(pubDate).toISOString().slice(0, 10) : extractDateText(combined),
       time: extractTimeText(combined),
       venue: null,
       location: "Grenada",
-      category: "Web Search",
+      category: "News",
       description: description || null,
-      source: "Web Search",
-      url: eventUrl,
+      source: "Google News",
+      url: rawLink,
       scrapedAt,
     };
     event.id = makeEventId(event);
     events.push(event);
-  }
+  });
 
   return events;
 }
 
 export async function scrapeWebSearch(): Promise<EventItem[]> {
-  const apiKey = process.env.BRAVE_API_KEY;
-  if (!apiKey) throw new Error("BRAVE_API_KEY is not set");
-
   const scrapedAt = new Date().toISOString();
-
   const results = await Promise.allSettled(
-    QUERIES.map((q) => searchQuery(q, apiKey, scrapedAt))
+    QUERIES.map((q) => fetchFeed(q, scrapedAt))
   );
-
   return results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
 }
