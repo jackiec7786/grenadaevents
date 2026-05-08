@@ -5,12 +5,12 @@ import { extractDateText, extractTimeText } from "../date-parser";
 
 const SEARCH_BASE = "https://html.duckduckgo.com/html/";
 
-// Queries tuned to the Caribbean island of Grenada specifically
+// Queries tuned to Grenada, W.I. (West Indies) — not Grenada, Mississippi
 const QUERIES = [
-  "Grenada island events 2026",
+  '"Grenada W.I." events 2026',
+  '"Grenada West Indies" events 2026',
   "Spicemas 2026 schedule",
-  "Grenada carnival 2026",
-  "Grenada festival 2026",
+  '"St. George\'s Grenada" events 2026',
 ];
 
 // Domains already covered by dedicated scrapers — skip duplicates
@@ -83,8 +83,10 @@ async function searchQuery(query: string, scrapedAt: string): Promise<EventItem[
     const snippet = cleanText(block.find(".result__snippet").first().text());
     const combined = `${title} ${snippet}`;
 
-    // Must mention Grenada (the island) to avoid false matches
-    if (!combined.toLowerCase().includes("grenada")) return;
+    // Must mention Grenada and must NOT be clearly about Grenada, Mississippi
+    const lower = combined.toLowerCase();
+    if (!lower.includes("grenada")) return;
+    if (lower.includes("mississippi") || lower.includes(", ms ") || lower.includes(",ms")) return;
 
     const event: EventItem = {
       id: "",
