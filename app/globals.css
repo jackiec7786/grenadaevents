@@ -85,12 +85,6 @@ a {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
 }
 
-.card h2 {
-  margin: 0;
-  font-size: 1.25rem;
-  line-height: 1.25;
-}
-
 .meta {
   color: var(--muted);
   font-size: 0.92rem;
@@ -129,4 +123,60 @@ a {
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 24px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.filterBtn {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 0.88rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.filterBtn--active {
+  background: var(--text);
+  border-color: var(--text);
+  color: #fff;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cardHeader h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.hideBtn {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  width: 28px;
+  height: 28px;
+  font-size: 1.1rem;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.hideBtn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
 }
