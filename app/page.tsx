@@ -1,13 +1,24 @@
 import { ScrapeResult, EventItem } from "@/lib/types";
 
+const EMPTY: ScrapeResult & { storage?: string } = {
+  count: 0,
+  events: [],
+  errors: [],
+  scrapedAt: "",
+};
+
 async function getEvents(): Promise<ScrapeResult & { storage?: string }> {
   const baseUrl = process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
     : "http://localhost:3000";
 
-  const res = await fetch(`${baseUrl}/api/events`, { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to load events");
-  return res.json();
+  try {
+    const res = await fetch(`${baseUrl}/api/events`, { cache: "no-store" });
+    if (!res.ok) return EMPTY;
+    return res.json();
+  } catch {
+    return EMPTY;
+  }
 }
 
 function trimDescription(value?: string | null): string | null {
