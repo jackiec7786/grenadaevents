@@ -3,8 +3,7 @@ import { EventItem } from "../types";
 import { absoluteUrl, cleanText, makeEventId } from "../utils";
 import { extractDateText, extractTimeText } from "../date-parser";
 
-// Slug specifically targets Saint George's, Grenada (W.I.) — not Grenada, Mississippi
-const SOURCE_URL = "https://www.eventbrite.com/d/grenada--saint-georges/events/";
+const SOURCE_URL = "https://www.bandsintown.com/c/saint-george%27s-grenada";
 
 type LdEvent = {
   "@type"?: string;
@@ -13,10 +12,8 @@ type LdEvent = {
   endDate?: string;
   description?: string;
   url?: string;
-  location?: {
-    name?: string;
-    address?: { addressLocality?: string; addressCountry?: string };
-  };
+  location?: { name?: string; address?: { addressLocality?: string } };
+  performer?: { name?: string } | { name?: string }[];
 };
 
 function parseJsonLd($: cheerio.CheerioAPI, scrapedAt: string): EventItem[] {
@@ -28,28 +25,21 @@ function parseJsonLd($: cheerio.CheerioAPI, scrapedAt: string): EventItem[] {
       const items = Array.isArray(data) ? data : [data];
 
       for (const item of items) {
-        if (item["@type"] !== "Event") continue;
+        if (item["@type"] !== "MusicEvent" && item["@type"] !== "Event") continue;
         const title = cleanText(item.name);
         if (!title || title.length < 3) continue;
-
-        const url = item.url;
-        if (!url || url === SOURCE_URL) continue;
 
         const event: EventItem = {
           id: "",
           title,
-          startDate: item.startDate || extractDateText(cleanText(item.description || "")) || null,
-          endDate: item.endDate || null,
+          startDate: item.startDate || null,
           time: extractTimeText(item.startDate || ""),
           venue: cleanText(item.location?.name) || null,
-          location:
-            cleanText(item.location?.address?.addressLocality) ||
-            cleanText(item.location?.address?.addressCountry) ||
-            "Grenada",
-          category: "Ticketed Event",
+          location: cleanText(item.location?.address?.addressLocality) || "Grenada",
+          category: "Live Music",
           description: cleanText(item.description) || null,
-          source: "Eventbrite",
-          url,
+          source: "Bandsintown",
+          url: item.url || SOURCE_URL,
           scrapedAt,
         };
         event.id = makeEventId(event);
@@ -63,7 +53,7 @@ function parseJsonLd($: cheerio.CheerioAPI, scrapedAt: string): EventItem[] {
   return events;
 }
 
-export async function scrapeEventbrite(): Promise<EventItem[]> {
+export async function scrapeBandsintown(): Promise<EventItem[]> {
   const res = await fetch(SOURCE_URL, {
     headers: {
       "User-Agent":
@@ -74,7 +64,7 @@ export async function scrapeEventbrite(): Promise<EventItem[]> {
     cache: "no-store",
   });
 
-  if (!res.ok) throw new Error(`Eventbrite returned ${res.status}`);
+  if (!res.ok) throw new Error(`Bandsintown returned ${res.status}`);
 
   const html = await res.text();
   const $ = cheerio.load(html);
@@ -86,30 +76,25 @@ export async function scrapeEventbrite(): Promise<EventItem[]> {
   // CSS fallback
   const events: EventItem[] = [];
 
-  $(
-    ".event-card, [data-event-id], .eds-event-card, .search-event-card-wrapper, article"
-  ).each((_, el) => {
+  $("[class*='event'], [class*='concert'], article, .show").each((_, el) => {
     const block = $(el);
-    const titleEl = block
-      .find(".event-card__title, .eds-event-card__formatted-name, h2, h3")
-      .first();
+    const titleEl = block.find("h1, h2, h3, h4").first();
     const title = cleanText(titleEl.text());
     if (!title || title.length < 3) return;
 
     const link = absoluteUrl(block.find("a").first().attr("href"), SOURCE_URL);
-    if (link === SOURCE_URL) return;
-
     const description = cleanText(block.text());
+
     const event: EventItem = {
       id: "",
       title,
       startDate: extractDateText(description),
       time: extractTimeText(description),
-      venue: cleanText(block.find(".event-card__venue").first().text()) || null,
+      venue: null,
       location: "Grenada",
-      category: "Ticketed Event",
+      category: "Live Music",
       description,
-      source: "Eventbrite",
+      source: "Bandsintown",
       url: link,
       scrapedAt,
     };
