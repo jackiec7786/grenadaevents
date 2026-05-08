@@ -32,6 +32,13 @@ function parseJsonLd($: cheerio.CheerioAPI, scrapedAt: string): EventItem[] {
         const title = cleanText(item.name);
         if (!title || title.length < 3) continue;
 
+        // Skip events without an individual URL — they have no actionable data
+        const url = item.url;
+        if (!url || url === SOURCE_URL) continue;
+
+        const location = cleanText(item.location?.address?.addressLocality) ||
+          cleanText(item.location?.address?.addressCountry) || "Grenada";
+
         const event: EventItem = {
           id: "",
           title,
@@ -39,11 +46,11 @@ function parseJsonLd($: cheerio.CheerioAPI, scrapedAt: string): EventItem[] {
           endDate: item.endDate || null,
           time: extractTimeText(item.startDate || ""),
           venue: cleanText(item.location?.name) || null,
-          location: cleanText(item.location?.address?.addressLocality) || "Grenada",
+          location,
           category: "Ticketed Event",
           description: cleanText(item.description) || null,
           source: "Eventbrite",
-          url: item.url || SOURCE_URL,
+          url,
           scrapedAt,
         };
         event.id = makeEventId(event);
@@ -77,7 +84,7 @@ export async function scrapeEventbrite(): Promise<EventItem[]> {
   const ldEvents = parseJsonLd($, scrapedAt);
   if (ldEvents.length > 0) return ldEvents;
 
-  // CSS fallback for when JSON-LD is absent
+    // CSS fallback for when JSON-LD is absent
   const events: EventItem[] = [];
 
   $(
@@ -93,6 +100,9 @@ export async function scrapeEventbrite(): Promise<EventItem[]> {
     if (!title || title.length < 3) return;
 
     const link = absoluteUrl(block.find("a").first().attr("href"), SOURCE_URL);
+    // Skip items that only link back to the listing page — they have no real event URL
+    if (link === SOURCE_URL) return;
+
     const description = cleanText(block.text());
 
     const event: EventItem = {

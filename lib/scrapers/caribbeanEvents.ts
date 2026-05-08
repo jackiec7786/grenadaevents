@@ -36,7 +36,15 @@ export async function scrapeCaribbeanEvents(): Promise<EventItem[]> {
       titleEl.attr("href") || block.find("a").first().attr("href"),
       SOURCE_URL
     );
+
+    // Skip nav/utility elements masquerading as events
+    if (!link || link === SOURCE_URL || link.includes("maps.google") || link.includes("event_tags")) return;
+
     const description = cleanText(block.text());
+
+    // This is a regional site — only keep events that mention Grenada
+    const combinedText = `${title} ${description}`.toLowerCase();
+    if (!combinedText.includes("grenada")) return;
 
     const event: EventItem = {
       id: "",
