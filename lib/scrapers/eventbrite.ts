@@ -19,6 +19,13 @@ type LdEvent = {
   };
 };
 
+const GRENADA_TERMS = ["grenada", "saint george", "st. george", "st george", "spicemas", "spice mas"];
+
+function isGrenada(text: string): boolean {
+  const lower = text.toLowerCase();
+  return GRENADA_TERMS.some((t) => lower.includes(t));
+}
+
 function parseJsonLd($: cheerio.CheerioAPI, scrapedAt: string): EventItem[] {
   const events: EventItem[] = [];
 
@@ -35,17 +42,22 @@ function parseJsonLd($: cheerio.CheerioAPI, scrapedAt: string): EventItem[] {
         const url = item.url;
         if (!url || url === SOURCE_URL) continue;
 
+        const locality = cleanText(item.location?.address?.addressLocality);
+        const country = cleanText(item.location?.address?.addressCountry);
+        const venue = cleanText(item.location?.name);
+        const locationStr = `${locality} ${country} ${venue}`;
+
+        // Drop events with an explicit non-Grenada location
+        if (locationStr.trim() && !isGrenada(`${locationStr} ${title}`)) continue;
+
         const event: EventItem = {
           id: "",
           title,
           startDate: item.startDate || extractDateText(cleanText(item.description || "")) || null,
           endDate: item.endDate || null,
           time: extractTimeText(item.startDate || ""),
-          venue: cleanText(item.location?.name) || null,
-          location:
-            cleanText(item.location?.address?.addressLocality) ||
-            cleanText(item.location?.address?.addressCountry) ||
-            "Grenada",
+          venue: venue || null,
+          location: locality || country || "Grenada",
           category: "Ticketed Event",
           description: cleanText(item.description) || null,
           source: "Eventbrite",
@@ -100,6 +112,8 @@ export async function scrapeEventbrite(): Promise<EventItem[]> {
     if (link === SOURCE_URL) return;
 
     const description = cleanText(block.text());
+    if (!isGrenada(`${title} ${description}`)) return;
+
     const event: EventItem = {
       id: "",
       title,
