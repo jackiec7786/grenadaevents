@@ -7,7 +7,7 @@ import { scrapeIloveCarnival } from "./scrapers/iloveCarnival";
 import { scrapePureGrenada } from "./scrapers/pureGrenada";
 import { scrapeWebSearch } from "./scrapers/webSearch";
 import { ScrapeResult } from "./types";
-import { dedupeEvents, isUpcoming } from "./utils";
+import { dedupeEvents, isUpcoming, isValidContent } from "./utils";
 
 export async function scrapeAllEvents(): Promise<ScrapeResult> {
   const scrapedAt = new Date().toISOString();
@@ -28,6 +28,7 @@ export async function scrapeAllEvents(): Promise<ScrapeResult> {
     results
       .flatMap((result) => (result.status === "fulfilled" ? result.value : []))
       .filter(isUpcoming)
+      .filter(isValidContent)
   );
 
   const errors = results

@@ -28,6 +28,15 @@ export function isUpcoming(event: EventItem): boolean {
   return true; // no explicit year — assume upcoming
 }
 
+// Rejects CSS-fallback junk: nav links, footers, short headings with no substance
+export function isValidContent(event: EventItem): boolean {
+  if (event.title.length < 6) return false;
+  const hasDate = !!event.startDate;
+  const hasDescription = (event.description?.length ?? 0) > 25;
+  const hasVenue = !!event.venue;
+  return hasDate || hasDescription || hasVenue;
+}
+
 function eventScore(e: EventItem): number {
   return (e.startDate ? 2 : 0) + (e.time ? 1 : 0) + (e.venue ? 1 : 0);
 }
