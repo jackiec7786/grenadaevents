@@ -11,6 +11,7 @@ const QUERIES = [
   '"Grenada West Indies" events',
   "Spicemas 2026",
   '"Saint Georges" Grenada event',
+  "food drink festival Grenada 2026",
 ];
 
 const SKIP_DOMAINS = [
@@ -25,6 +26,8 @@ const SKIP_DOMAINS = [
   "eventbrite.com",
   "bandsintown.com",
   "viator.com",
+  "allevents.in",
+  "conferencealerts.in",
 ];
 
 function isSkippedDomain(url: string): boolean {
