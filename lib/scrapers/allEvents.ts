@@ -66,7 +66,7 @@ async function scrapePage(url: string, scrapedAt: string): Promise<EventItem[]> 
   if (events.length > 0) return events;
 
   // CSS fallback
-  $("[class*='event'], [class*='card'], article, li").each((_, el) => {
+  $("[class*='event'], [class*='card'], article").each((_, el) => {
     const block = $(el);
     const titleEl = block.find("h2, h3, h4, [class*='title'], [class*='name']").first();
     const title = cleanText(titleEl.text());
@@ -76,6 +76,10 @@ async function scrapePage(url: string, scrapedAt: string): Promise<EventItem[]> 
       titleEl.find("a").attr("href") || block.find("a").first().attr("href"),
       url
     );
+    // Skip cards that don't link to an actual event page on allevents.in
+    if (!link.includes("allevents.in/")) return;
+    if (link === url) return;
+
     const description = cleanText(block.text());
 
     const event: EventItem = {

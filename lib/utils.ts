@@ -28,6 +28,38 @@ export function isUpcoming(event: EventItem): boolean {
   return true; // no explicit year — assume upcoming
 }
 
+const JUNK_TITLE_PATTERNS = [
+  /^chat\b/i,
+  /\bchat with\b/i,
+  /\bai assistant\b/i,
+  /^sign (up|in)\b/i,
+  /^log in\b/i,
+  /^subscribe\b/i,
+  /^newsletter\b/i,
+  /^cookie(s| policy| notice)?\b/i,
+  /^privacy policy\b/i,
+  /^terms (of (service|use))?\b/i,
+  /^(download|get) (the )?(app|our app)\b/i,
+  /^back to top\b/i,
+  /^skip to\b/i,
+  /^menu\b/i,
+  /^search\b/i,
+  /^home\b/i,
+  /^about us?\b/i,
+  /^contact us?\b/i,
+  /^all events?\b/i,
+];
+
+// Rejects CSS-fallback junk: chatbots, nav links, UI widgets, footers
+export function isValidContent(event: EventItem): boolean {
+  if (event.title.length < 6) return false;
+  if (JUNK_TITLE_PATTERNS.some((re) => re.test(event.title))) return false;
+  const hasDate = !!event.startDate;
+  const hasDescription = (event.description?.length ?? 0) > 25;
+  const hasVenue = !!event.venue;
+  return hasDate || hasDescription || hasVenue;
+}
+
 function eventScore(e: EventItem): number {
   return (e.startDate ? 2 : 0) + (e.time ? 1 : 0) + (e.venue ? 1 : 0);
 }

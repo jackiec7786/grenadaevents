@@ -35,6 +35,7 @@ export async function scrapeConferenceAlerts(): Promise<EventItem[]> {
       SOURCE_URL
     );
     if (link === SOURCE_URL) return;
+    if (!link.includes("conferencealerts.in/")) return;
 
     const description = cleanText(block.text());
 
