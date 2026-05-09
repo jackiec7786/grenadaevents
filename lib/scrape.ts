@@ -2,6 +2,7 @@ import { scrapeCaribbeanEvents } from "./scrapers/caribbeanEvents";
 import { scrapeEventbrite } from "./scrapers/eventbrite";
 import { scrapeFeteList } from "./scrapers/feteList";
 import { scrapeIloveCarnival } from "./scrapers/iloveCarnival";
+import { scrapePublicHolidays } from "./scrapers/publicHolidays";
 import { scrapePureGrenada } from "./scrapers/pureGrenada";
 import { scrapeWebSearch } from "./scrapers/webSearch";
 import { ScrapeResult } from "./types";
@@ -16,6 +17,7 @@ export async function scrapeAllEvents(): Promise<ScrapeResult> {
     scrapeFeteList,
     scrapeCaribbeanEvents,
     scrapeIloveCarnival,
+    scrapePublicHolidays,
     scrapeWebSearch,
   ];
 
